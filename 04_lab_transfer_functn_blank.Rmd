@@ -36,11 +36,11 @@ This matters for two reasons.
 
 First, environmental models are not black boxes. Every equation reflects an assumption about how the system works. We need to understand those assumptions before we can interpret results.
 
-Second, in the next unit we will use Monte Carlo simulations to explore parameter uncertainty. Before we let an algorithm suggest parameter values and sensitivity, we need intuition for how parameters influence model behavior. 
+Second, in the next unit we will use Monte Carlo simulations to explore parameter uncertainty. Before we let an algorithm suggest parameter values and sensitivity, you need intuition for how parameters influence model behavior. 
 
 Therefore, the goal is not to jump through coding steps. The goal is to understand how rainfall becomes runoff in a model and how your choices control that transformation.
 
-Lets start with the usual setup chunk using the package testing function:
+The usual setup chunk using the package testing function:
 ```{r, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, eval = TRUE, warning = TRUE, comment = TRUE, message = FALSE, error = TRUE)
 
@@ -63,42 +63,42 @@ for (package in neededPackages){pkgTest(package)}
 # patchwork is used for side-by-side plots
 ```
 
-#### Read in the data 
+#### Read in the data
 Let's try a new trick along the way. Assume that you know you put your data file in the working directory, but cannot recall its name. Let's do some working directory exploration with script:
 
 ```{r}
+# Let's try a new trick along the way. Assume that you know you put your data file in the working directory, but cannot recall its name. Let's do some working directory exploration with script:
+
 # Check your working directory:
-print(getwd())
+
 
 # Check the datafile name or path by listing files in the working directory.
-filepaths <-list.files()
-print(filepaths)
-
+filepaths <-
+  
 # Here is an option to list only .csv files in your working directory:
-csv_files <- filepaths[grepl(".csv$", filepaths, ignore.case = TRUE)]
+csv_files <- 
+  
 print(csv_files)
 ```
 
 Now we'll read in the data and do some transformation. This will look familiar.
 ```{r}
 # Identify the path to the desired data. 
-filepath <- "P_Q_1996_2011.csv"
-indata <- read_csv(filepath)
+filepath <- 
+indata <- 
 
-indata <- indata %>%
-  mutate(Date = mdy(BLANK)) %>% # convert "Date" to a date object with mdy()
-  mutate(wtr_yr = if_else(month(Date) > 9, year(Date) + 1, year(Date))) # add the water year
+indata <-
+ # convert "Date" to a date object with mdy()
+ # add the water year
 ```
 
 #### Define input year
 We could use every year in the time series, but for starters, we'll use 2006. Use filter() to extract the 2006 water year.
 ```{r define_year}
-PQ <- indata %>%
-  BLANK(wtr_yr == 2006) # extract the 2006 water year with filter()
+PQ <-  # extract the 2006 water year with filter()
 
 # plot discharge for 2006
-ggplot(BLANK, aes(x = Date, y = Discharge_mm)) +
-  geom_line()
+
 ```
 
 #### Define the initial inputs
@@ -111,9 +111,9 @@ In this step, we extract:
 
 At this stage, we are not modeling anything yet. We are just defining the inputs and reference output that will anchor the rest of the workflow.
 ```{r define_inputs}
-tau <- 1:nrow(PQ) # simple timestep counter the same length as PQ
-Pobs <- PQ$RainMelt_mm # observed precipitation from PQ df
-Qobs <- PQ$Discharge_mm # observed streamflow from PQ df
+tau <-  # simple timestep counter the same length as PQ
+Pobs <-  # observed precipitation from PQ df
+Qobs <-  # observed streamflow from PQ df
 ```
 
 #### Parameterization 
@@ -134,7 +134,7 @@ b <- 3.29 # TF scale parameter
 
 ##### Why parameters matter
 
-These parameters are not just tuning knobs; they represent assumptions about storage, memory, and routing within the watershed. As you adjust them later, watch for:
+These parameters are not just tuning knobs; they represent assumptions about storage, memory, and routing within the watershed. As you adjust them, watch for:
 
 -- Changes in peak magnitude
 -- Shifts in timing
@@ -161,8 +161,8 @@ s(t) represents watershed wetness.
 
 Effective precipitation is the portion of rainfall that generates streamflow. Conceptually, it represents event water and the displacement of pre-event water into the stream.
 ```{r loss_function1}
-# preallocate the p_eff vector
-p_eff <- vector(mode = "double", length(tau))
+# preallocate the p_eff vector (length())
+p_eff <- 
 ```
 
 2) Initialize the antecedent index, s(t)
@@ -188,35 +188,31 @@ Note:
 Weiler et al. (2003) suggest that the volume control parameter can be determined directly from measured input. In practice, this is not the case, it must be calibrated.
 
 ```{r loss_function2_3}
-s <- b3 # at this point, s is equal to b3 (see previous chunk)
+s <- # at this point, s is equal to b3 (see previous chunk)
 
 # Because the antecedent index depends on its previous value, we must update it sequentially through time. This is why a loop is appropriate here.
 # loop with loss function
 for (i in 1:length(p_eff)) {
-  s <- b1 * Pobs[i] + (1 - 1/b2) * s # this is eq 4a from Weiler et al. (2003)
-  p_eff[i] <- Pobs[i] * s # this is eq 4c from Weiler et al. (2003)
+  s <- # this is eq 4a from Weiler et al. (2003)
+  p_eff[i] <-  # this is eq 4c from Weiler et al. (2003)
 }
+
 ```
 
 Plot observed and effective precipitation against the date
 ```{r loss_function2_3}
 # wide to long with pivot_longer()
-precip <- tibble(date = PQ$Date, obs = Pobs, sim = p_eff) %>%
-  pivot_longer(names_to = "key", values_to = "value", -date)
+precip <- 
 
 # Plot P time series is with a step function. ggplot2 has geom_step() for this.
-p1 <- ggplot(precip, aes(x = date, y = value, color = key)) +
-  BLANK() +
-  labs(color = "P")
+p1 <- 
 
 ## plot the ratio of p_eff/Pobs (call that ratio "frac")
 precip_new <- tibble(date = PQ$Date, obs = Pobs, sim = p_eff, frac = p_eff/Pobs)
 
-p2 <- ggplot(data = precip_new, aes(x = date, y = frac)) +
-  geom_line() +
-  labs(y = "frac")
+p2 <- 
 
-p1 / p2   # stacks vertically
+p1 / p2   # stacks vertically 
 ```
 
 **2) QUESTION (3 pts): Interpret the two figures. What is the meaning of "frac"? For this answer, think about what the effective precipitation represents. When is frac "high", when is "frac" low?** 
@@ -229,10 +225,13 @@ ANSWER:
 Ok, up to this point, we have determined *how much* precipitation becomes effective rainfall (p_eff).
 
 Now we answer a different question:
-Once water is available for runoff, *how is it distributed through time* as it moves through the watershed?
+Once water is available for runoff, *how is it distributed* through time as it moves through the watershed?
+
+In other words, the loss function determines how much water enters the routing system.
+The transfer function determines when that water exits.
 
 The transfer function represents the travel time distribution of water. It describes how a pulse of effective precipitation is spread out before it reaches the stream outlet.
-In this model, we use a gamma distribution to represent that travel time behavior.
+In this implementation, we use a gamma distribution to represent that travel time behavior.
 This section contains two steps:
 -- Compute the (raw) gamma transfer function.
 -- Normalize it so that the total area under the curve equals 1.
@@ -241,16 +240,14 @@ tau represents time since a rainfall pulse.
 The mean residence time of the distribution is controlled by the shape (a) and scale (b) parameters.
 ```{r routing_function}
 # raw gamma transfer function (Eq. 13, Weiler et al. 2003 — corrected form)
-g <- (tau^(a - 1)) / ((b^a * gamma(a))) * exp(-tau / b)
-
+g <- 
 # normalize the TF, g, by the total sum of g.
-gTF <- g / sum(g)
+gTF <- 
 
 # plot the transfer function as a line against tau. You need to put the two vectors tau and gTF into a new df/tibble for this. 
-tf_plot <- tibble(tau, gTF)
+tf_plot <- 
 
-ggplot(tf_plot, aes(tau, gTF)) +
-  geom_line()
+
 ```
 Think of this curve as the watershed’s “fingerprint” for routing water.
 
@@ -281,7 +278,7 @@ Why timesteps matter
 
 We are modeling one water year (365 days).
 However, our transfer function is also 365 timesteps long. This means that rainfall occurring late in the year will continue contributing runoff into the following year. In other words:
-A rainfall pulse on day 350 could still be producing runoff on day 360, 365, and potentially beyond.
+A rainfall pulse on day 300 will still be producing runoff on day 350, 360, and potentially beyond day 365.
 So we must decide how to handle runoff that extends beyond our modeling window.
 
 There are a couple of ways to do this, we'll stick with the option that is easiest to code. 
@@ -310,11 +307,11 @@ q_all[t] = total simulated runoff at timestep t.
 
 ```{r convolution}
 # preallocate qsim matrix with the correct dimensions. Remember that p_eff and gTF are the same length.
-q_all_loop <- matrix(0, length(p_eff) * 2, length(p_eff)) # set number of rows and columns
+q_all_loop <- matrix() # set number of rows and columns
 
 # convolution for-loop
 for (i in 1:length(p_eff)) { # loop through length of precipitation timeseries
-  q_all_loop[(i):(length(p_eff) + i - 1), i] <- p_eff[i] * gTF # populate the q_all matrix (this is the same code as the UH convolution problem with one tiny change because you need to reference gTF and not UH)
+  # populate the q_all matrix (this is the same code as the UH convolution problem with one tiny change because you need to reference gTF and not UH)
 }
 # view(q_all_loop)
 ```
@@ -325,21 +322,21 @@ Matrix is oversized to allow spillover beyond day 365
 
 ```{r convolution}
 # add up the rows of the matrix to generate the final runoff and replace matrix with final Q
-q_all <- apply(q_all_loop, 1, sum, na.rm = TRUE)
+q_all <- 
 ```
 Summing across rows combines all individual mini-hydrographs into one final simulated hydrograph
 
 Now lets handle edge effects:
 ```{r convolution}
 # cut the vector to the appropriate length of one year (otherwise it won't fit into the original df with the observed data)
-q_all <- q_all[1:length(p_eff)]
+q_all <- 
 
 # Write the final runoff vector into the PQ df
-PQ$Qsim <- q_all
+PQ$Qsim <- 
 ```
 **5) QUESTION (3 pts): By setting the transfer function length to 365 days, what assumption are we making about maximum travel times in the watershed? Would a shorter or longer transfer function change model behavior? Why?**  
 
-ANSWER:
+ANSWER: 
 
 
 ### Visualizing the Convolution
@@ -352,23 +349,18 @@ By plotting all of them together, we can see how convolution builds the final hy
 
 ```{r}
 ## THIS PART SAVES ALL HOURLY Q RESPONSES IN A NEW DF AND PLOTS THEM
-Qall <- as_tibble(q_all_loop, .name_repair = NULL)
-Qall <- Qall[ -as.numeric(which(apply(Qall, 2, var) == 0))]
-toc()
+Qall <- 
+
 
 # Qall[Qall == 0] <- NA
 
-Qall <- Qall %>%
-  mutate(Time_hrs = 1:nrow(Qall)) %>% # add the time vector
+Qall <- 
+  # add the time vector
   gather(key, value, -Time_hrs)
 
 Qall$key <- as.factor(Qall$key)
 
-ggplot(Qall, aes(x = Time_hrs, y = value, fill = key)) +
-  geom_line(alpha = 0.2) +
-  theme(legend.position = "none") +
-  lims(x = c(1, 365)) +
-  labs(x = "DoY", y = " Runoff contribution (mm/day)")
+ggplot(Qall
 ```
 Each faint line represents the runoff response to a single timestep of effective precipitation.
 
@@ -386,10 +378,7 @@ PQ_long <- PQ %>%
   pivot_longer(names_to = "key", values_to = "value", -Date)
 
 # plot hydrographs (as lines) and label the y-axis
-ggplot(data = PQ_long, aes(x = Date, y = value, color = key)) +
-  geom_line() +
-  labs(x = "Date", y = "Q (mm/day)", color = "") +
-  lims(x = as.Date(c("2005-10-01", "2006-09-30")))
+ggplot()
 ```
 We have now built the full rainfall–runoff model:
 
@@ -406,14 +395,13 @@ ANSWER:
 ```{r}
 sum(Pobs) # observed P
 
-sum(BLANK) # effective (modeled) P
+# effective (modeled) P
 
-sum(q_all) # modeled Q
+# modeled Q
 
-sum(Qobs) # observed Q
+ # observed Q
 ```
 **7) QUESTION (2 pt): Compare the total effective precipitation with the total simulated runoff and the total observed runoff. What does p_eff physically represent? Why should ∑p_eff and ∑q_all be nearly equal? Why is there a (small) mismatch between the sums of p_eff and q_all?**    
-
 ANSWER: 
 
 
@@ -437,7 +425,7 @@ Avoid changing multiple parameters at once; that makes it impossible to isolate 
 The goal here is not to “improve” the model yet.
 The goal is to build intuition about how each parameter controls system behavior.
 
-**8) QUESTION (2pt) Select two model parameters and adjust them (one at a time) away from their baseline values. For each parameter you chose:**
+**8) QUESTION (2pt) Select two model parameters and adjust them (one at a time) away from their baseline values. For each parameter:**
 **State the original value. State the new value you tested.**
 **Briefly describe how the simulated hydrograph changed (e.g., peak magnitude, timing, recession, total runoff).**
 
